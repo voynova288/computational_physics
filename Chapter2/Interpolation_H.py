@@ -215,8 +215,3 @@ def Piecewise_Her_Interpolation(x, y, yprime, Ex_x=[]):
         return Interval_Polynomial
     else:
         return Interval_Polynomial, Ex_y
-    
-
-x = Piecewise_Her_Interpolation([-1, 0, 1], [1, 0, 1], [2, 4, -3])
-
-print(f'{x}')
