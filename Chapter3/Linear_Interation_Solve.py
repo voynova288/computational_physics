@@ -59,13 +59,13 @@ def Jacobi_Interation(A, b, Sol_0=None, N_Interation=8):
 # *用高斯-赛德尔方法迭代求解线性方程组Ax=b
 # *输入：矩阵A，等号右边向量b，可选参数：初始解（默认为0向量），迭代次数（默认为8）
 # *输出：方程解的列表
-def Goss_Seidel_Interation(A, b, Sol=None, N_Interation=8):
+def Gauss_Seidel_Interation(A, b, Sol=None, N_Interation=8):
     A = np.asarray(A)
     b = np.asarray(b, dtype=np.float64)
     row_A, col_A = A.shape
     if row_A != col_A:
         print(
-            "Jacobi_Interation: Sorry, I have not written the program yet to deal with A not being a square matrix"
+            "Gauss_Seidel_Interation: Sorry, I have not written the program yet to deal with A not being a square matrix"
         )
         return None
 
@@ -92,13 +92,13 @@ def Goss_Seidel_Interation(A, b, Sol=None, N_Interation=8):
 
     eigen_G, _ = np.linalg.eig(G)
     if max(abs(eigen_G)) > 1:  # 谱半径大于1
-        print("Jacobi_Interation Error: Iterative nonconvergence")
+        print("Gauss_Seidel_Interation Error: Iterative nonconvergence")
         return None
     elif min(abs(eigen_G)) == 0:
-        print("Jacobi_Interation Error: A is Singular")
+        print("Gauss_Seidel_Interation Error: A is Singular")
         return None
     elif min(abs(eigen_G)) < 0.01:  # 条件数太多
-        print("Jacobi_Interation Warning: Ill-Conditioned matrix A may cause errors")
+        print("Gauss_Seidel_Interation Warning: Ill-Conditioned matrix A may cause errors")
 
     for k in range(N_Interation):
         Sol = [
@@ -110,10 +110,6 @@ def Goss_Seidel_Interation(A, b, Sol=None, N_Interation=8):
     return Sol
 
 
-Sol = Goss_Seidel_Interation([[1, 2, 3], [4, 2, 2], [2, 3, 75]], [6, 8, 17])
-print(f"{Sol}")
-
-
 # *超松弛迭代法求解线性方程组
 # *输入：矩阵A，等号右边向量b，可选参数：松弛因子（默认为1），初始解（默认为0向量），迭代次数（默认为8）
 # *输出：方程解的列表
@@ -123,10 +119,10 @@ def SOR_Interation(A, b, omega=1, Sol_0=None, N_Interation=8):
     row_A, col_A = A.shape
     if row_A != col_A:
         print(
-            "Jacobi_Interation: Sorry, I have not written the program yet to deal with A not being a square matrix"
+            "SOR_Interation: Sorry, I have not written the program yet to deal with A not being a square matrix"
         )
         return None
-    
+
     Pivot_index = np.argmax(A[:, 1])  # 选取主元
     A[[0, Pivot_index]] = A[[Pivot_index, 0]]  # 交换矩阵的行，使主元在第一列
     b[0], b[Pivot_index] = b[Pivot_index], b[0]  # 对应地交换b的列
@@ -150,13 +146,13 @@ def SOR_Interation(A, b, omega=1, Sol_0=None, N_Interation=8):
     G = np.dot(np.linalg.inv(D - omega * L), (1 - omega) * D + omega * U)
     eigen_G, _ = np.linalg.eig(G)
     if max(abs(eigen_G)) > 1:  # 谱半径大于1
-        print("Jacobi_Interation Error: Iterative nonconvergence")
+        print("SOR_Interation Error: Iterative nonconvergence")
         return None
     elif min(abs(eigen_G)) == 0:
-        print("Jacobi_Interation Error: A is Singular")
+        print("SOR_Interation Error: A is Singular")
         return None
     elif min(abs(eigen_G)) < 0.01:  # 条件数太多
-        print("Jacobi_Interation Warning: Ill-Conditioned matrix A may cause errors")
+        print("SOR_Interation Warning: Ill-Conditioned matrix A may cause errors")
 
     for k in range(N_Interation):
         Sol = [
@@ -169,3 +165,4 @@ def SOR_Interation(A, b, omega=1, Sol_0=None, N_Interation=8):
             Sol_0[i] = Sol[i]
 
     return Sol
+
