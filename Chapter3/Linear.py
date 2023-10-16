@@ -225,6 +225,3 @@ def LU_Solve(A, b):
 
         return Particular_Sol, General_Sol
 
-
-Sol = LU_Solve([[4, 9], [10, 43]], [5, 6])
-print(f"{Sol}")
