@@ -98,7 +98,9 @@ def Gauss_Seidel_Interation(A, b, Sol=None, N_Interation=8):
         print("Gauss_Seidel_Interation Error: A is Singular")
         return None
     elif min(abs(eigen_G)) < 0.01:  # 条件数太多
-        print("Gauss_Seidel_Interation Warning: Ill-Conditioned matrix A may cause errors")
+        print(
+            "Gauss_Seidel_Interation Warning: Ill-Conditioned matrix A may cause errors"
+        )
 
     for k in range(N_Interation):
         Sol = [
@@ -154,6 +156,7 @@ def SOR_Interation(A, b, omega=1, Sol_0=None, N_Interation=8):
     elif min(abs(eigen_G)) < 0.01:  # 条件数太多
         print("SOR_Interation Warning: Ill-Conditioned matrix A may cause errors")
 
+    Sol = [Sol_0[i] for i in range(len(Sol_0))]
     for k in range(N_Interation):
         Sol = [
             (1 - omega) * Sol_0[i]
@@ -165,4 +168,3 @@ def SOR_Interation(A, b, omega=1, Sol_0=None, N_Interation=8):
             Sol_0[i] = Sol[i]
 
     return Sol
-
