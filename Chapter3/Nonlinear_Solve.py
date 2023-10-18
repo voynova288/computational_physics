@@ -34,8 +34,3 @@ def Newton_Nonlinear_Solve(Equations, Sol=None, Interation_times=10):
 
     return list(Sol)
 
-
-x1 = symp.symbols("x1")
-x2 = symp.symbols("x2")
-Sol = Newton_Nonlinear_Solve([x1**2 + x2**2 + 8 - 10*x1, x1*x2**2 + x1 - 10*x2 + 8])
-print(f'{Sol}')
