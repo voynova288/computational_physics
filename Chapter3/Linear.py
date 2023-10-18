@@ -279,11 +279,9 @@ def Jocabi_Eigen(A, err=None):
             B = np.copy(A)
             np.fill_diagonal(B, 0)
             Max_B = np.max(np.abs(B))
-        
-        n = n+1
-    
-    return [A[i][i] for i in range(row_A)]
 
+        n = n + 1
 
-Eigen = Jocabi_Eigen([[3, 2, 5], [2, 2, 9], [5, 9, 1]])
-print(f'{Eigen}')
+    Eigenvalues = [A[i][i] for i in range(row_A)]
+
+    return Eigenvalues
