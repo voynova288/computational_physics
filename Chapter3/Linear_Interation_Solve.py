@@ -168,3 +168,4 @@ def SOR_Interation(A, b, omega=1, Sol_0=None, N_Interation=8):
             Sol_0[i] = Sol[i]
 
     return Sol
+
