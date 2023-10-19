@@ -175,7 +175,7 @@ def Newton_Interval(x, y, Ex_x=[]):
 
 
 #分段插值，每一段是三次的厄米插值
-#!代码没写完
+#!代码没写完，还要写可选不是三次厄米插值
 def Piecewise_Her_Interpolation(x, y, yprime, Ex_x=[]):
     if not x or not y or not yprime:
         print('Warning(Hermite_Interval): x, y or yprime is empty')
