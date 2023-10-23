@@ -238,6 +238,7 @@ def Power_Method(A, step=10, v0=None):
     if v0 is None:
         v0 = np.array([1 for i in range(row_A)]).reshape(row_A, 1)
 
+    vk = v0.copy()
     for i in range(step):
         if i != 0:
             v0 = vk.copy()
