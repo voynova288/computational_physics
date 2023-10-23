@@ -247,10 +247,6 @@ def Power_Method(A, step=10, v0=None):
     return np.mean(vk / v0), vk.reshape(row_A) / (np.power(np.mean(vk / v0), step - 1))
 
 
-Sol = Power_Method([[4, -1, 1], [-1, 3, -2], [1, -2, 3]])
-print(Sol)
-
-
 # *雅可比法求矩阵的特征值，这种方法只能求对称矩阵的特征值
 # *输入：矩阵A，误差范围（可选，默认为A中最小元素的0.01倍），最大迭代次数(可选，默认20次)
 # *输出：矩阵A的特征值
