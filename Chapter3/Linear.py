@@ -226,6 +226,30 @@ def LU_Solve(A, b):
         return Particular_Sol, General_Sol
 
 
+# *幂法求矩阵本征值
+# *输入：矩阵A，迭代次数（可选参数，默认为10），初始向量（可选参数，默认为[1, 1, 1, ……]）
+# *输出：矩阵A最大的本征值，相应的本征向量
+def Power_Method(A, step=10, v0=None):
+    A = np.array(A)
+    row_A, col_A = A.shape
+    if row_A != col_A:  # 检查是否为方阵
+        raise ValueError("Matrix is not square")
+
+    if v0 is None:
+        v0 = np.array([1 for i in range(row_A)]).reshape(row_A, 1)
+
+    for i in range(step):
+        if i != 0:
+            v0 = vk.copy()
+        vk = np.dot(A, v0)
+
+    return np.mean(vk / v0), vk.reshape(row_A) / (np.power(np.mean(vk / v0), step - 1))
+
+
+Sol = Power_Method([[4, -1, 1], [-1, 3, -2], [1, -2, 3]])
+print(Sol)
+
+
 # *雅可比法求矩阵的特征值，这种方法只能求对称矩阵的特征值
 # *输入：矩阵A，误差范围（可选，默认为A中最小元素的0.01倍），最大迭代次数(可选，默认20次)
 # *输出：矩阵A的特征值
@@ -296,6 +320,8 @@ def Jocabi_Eigen(A, err=None, step=None):
 # *输入：一个矩阵A，从第几个指标开始变换（可选参数，默认为1）
 # *输出：用Householder方法从A得到的上Hessenberg矩阵
 def Householder_Hessenberg(A, Shape=1):
+    if Shape < 1 or not isinstance(Shape, int):
+        raise ValueError("Invalid Shape requirement")
     A = np.array(A)
     row_A, col_A = A.shape
     if row_A != col_A:  # 检查是否为方阵
@@ -319,7 +345,7 @@ def Householder_Hessenberg(A, Shape=1):
             if row_A - k - Shape > 1
             else np.array([[1]]) - (1 / beta) * np.dot(u_col, u_col.T)
         )
-        print(f'{Rk}')
+        print(f"{Rk}")
         Ik = np.eye(k + Shape)
         Uk = np.block(
             [
@@ -331,4 +357,3 @@ def Householder_Hessenberg(A, Shape=1):
 
     print(f"{A}")
     return A
-
