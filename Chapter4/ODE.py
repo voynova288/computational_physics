@@ -2,6 +2,7 @@ import numpy as np
 import sympy as symp
 
 
+# TODO 以下程序均不支持符号变量或符号表达式作为边界条件
 def Euler_ODE(
     f: symp.Expr | list[symp.Expr],
     symbol: list[symp.Symbol],
@@ -235,7 +236,7 @@ def Shooting(
     boundary: list,
     h: int | float | None = None,
 ):
-    # * 用打靶法数值求解常微分方程组
+    # * 用打靶法数值求解常微分方程f[0]y+f[1]y'+f[2]y''+……=f[-1]
     # * 边界条件是y(boundary[0][0])=boundary[0][1],y(boundary[1][0])=boundary[1][1]
     # * 横坐标是在区间boundary[0][0]到boundary[1][0]之间步长为h的一个列表
     # * 求解高阶常微分方程组的功能尚未开发
@@ -282,8 +283,11 @@ def Collocation(
     bases: list[int | float | symp.Expr | symp.Function] = None,
     collpoint: list[int | float] = None,
     h: int | float = None,
-    outputNlist: bool = True,
+    outputNlist: bool = False,
 ):
+    # * 用配置法求解常微分方程f[0]y+f[1]y'+f[2]y''+……=f[-1]
+    # * 边界条件是y(boundary[0][0])=boundary[0][1],y(boundary[1][0])=boundary[1][1]
+    # * bases是基函数，默认是一个阶数是方程阶数加一的多项式
     f = [
         element if isinstance(element, (symp.Expr, symp.Function)) else symp.S(element)
         for element in f
@@ -301,7 +305,7 @@ def Collocation(
     if h is None:
         h = (boundary[1][0] - boundary[0][0]) / 8
     if bases is None:
-        bases = [symp.S(1) if i == 1 else x**i for i in range(len(f))]
+        bases = [symp.S(1) if i == 0 else x**i for i in range(len(f))]
     if collpoint is None:
         collpoint = [
             boundary[0][0]
@@ -324,14 +328,14 @@ def Collocation(
     equations = [
         symp.Eq(u.subs({x: boundary[0][0]}), boundary[0][1])
         if i == 0
-        else symp.Eq(r.subs({x: collpoint[i - 1]}),0)
+        else symp.Eq(r.subs({x: collpoint[i - 1]}), 0)
         if i < len(bases) - 1
         else symp.Eq(u.subs({x: boundary[1][0]}), boundary[1][1])
         for i in range(len(bases))
     ]
     sol = symp.solve(equations, a)
 
-    fitting = sum(sol[symp.symbols('a'+str(i))]*bases[i] for i in range(len(bases)))
+    fitting = sum(sol[symp.symbols("a" + str(i))] * bases[i] for i in range(len(bases)))
 
     if outputNlist is True:
         X = [
@@ -340,19 +344,83 @@ def Collocation(
         ]
         Y = [fitting.subs({x: element_x}) for element_x in X]
         return fitting, X, Y
-    else :
+    else:
         return fitting
 
 
-# *以下是测试代码
-x = symp.symbols("x")
-y = symp.symbols("y")
-z = symp.symbols("z")
-p = symp.Function("p")
-# xlist, ylist = FiniteDiff([1, -x, 1, 1], [[0, 0], [2, 0]], 0.5)
-# print(f"xlist:{xlist},ylist:{ylist}")
-# xlist1, ylist1 = Euler_ODE(1 + y**2 + x**3, [x, y], 0, 0)
-# print(f"xlist1:{xlist1},ylist1:{ylist1}")
-# xlist2, ylist2 = Shooting([(np.pi**2) / 4, 0, 1, -(np.pi**2) / 4], [[0, 0], [1, 1]])
-# print(f"xlist2:{xlist2},ylist2:{ylist2}")
+def LeastSquareODE(
+    f: list[symp.Expr | symp.Function | int | float],
+    boundary: list,
+    bases: list[int | float | symp.Expr | symp.Function] = None,
+    outputNlist: bool = False,
+    h: int | float = None,
+):
+    # * 用最小二乘法求解常微分方程f[0]y+f[1]y'+f[2]y''+……=f[-1]
+    # * 边界条件是y(boundary[0][0])=boundary[0][1],y(boundary[1][0])=boundary[1][1]
+    # * bases是基函数，默认是一个阶数是方程阶数加一的多项式
+    f = [
+        element if isinstance(element, (symp.Expr, symp.Function)) else symp.S(element)
+        for element in f
+    ]
+    symbols = set()
+    for element in f:
+        symbols = symbols.union(element.free_symbols)
+    symbols = list(symbols)
+    if len(symbols) > 1:
+        raise ValueError("Only equations with one variable are supported")
+    elif len(symbols) == 0:
+        x = symp.symbols("x")
+    else:
+        x = symbols[0]
+    if bases is None:
+        bases = [symp.S(1) if i == 0 else x**i for i in range(len(f))]
+    bases = [
+        element if isinstance(element, (symp.Expr, symp.Function)) else symp.S(element)
+        for element in bases
+    ]
+
+    X = [
+        boundary[0][0] + ((boundary[1][0] - boundary[0][0]) / (len(bases) * 2 - 1)) * i
+        for i in range(len(bases) * 2)
+    ]
+    phi = [
+        sum(symp.diff(bases[j], (x, i)) * f[i] for i in range(len(f) - 1))
+        for j in range(len(bases))
+    ]
+    B = [
+        [
+            sum((phi[i] * phi[j]).subs({x: X[k]}) for k in range(len(X)))
+            if i < len(phi) - 2
+            else bases[j].subs({x: boundary[i - len(phi) + 2][0]})
+            for j in range(len(phi))
+        ]
+        for i in range(len(phi))
+    ]
+    beta = [
+        sum((phi[i] * f[-1]).subs({x: X[k]}) for k in range(len(X)))
+        if i < len(phi) - 2
+        else boundary[i - len(phi) + 2][1]
+        for i in range(len(phi))
+    ]
+    # TODO 实际上这里将基的内积的矩阵的两行替换成了边界条件\n
+    # TODO 可以根据最小二乘法和边界条件写出一个超定方程\n
+    # TODO 删除系数矩阵中线性相关的行，我们希望得到系数矩阵应是一个方阵\n
+    # TODO 若不是方阵，删除任意行使矩阵称为方阵仍然可以得到正确结果
+
+    coffs = np.linalg.solve(
+        np.array(B, dtype=np.float64), np.array(beta, dtype=np.float64)
+    )
+    fitting_sol = sum(coffs[i] * bases[i] for i in range(len(bases)))
+
+    if outputNlist is True:
+        if h is None:
+            h = (boundary[1][0] - boundary[0][0]) / 8
+        X_ = [
+            boundary[0][0] + h * k
+            for k in range(int((boundary[1][0] - boundary[0][0]) / h) + 1)
+        ]
+        Y = [fitting_sol.subs({x: element_x}) for element_x in X_]
+        return fitting_sol, X, Y
+    else:
+        return fitting_sol
 
