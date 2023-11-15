@@ -87,7 +87,7 @@ def Col_Pivot_Elimination(A, b):
     else:
         Augmented_Matrix = np.concatenate((A, b), axis=1)
         for i in range(min(row_A, col_A)):
-            Pivot_index = np.argmax(Augmented_Matrix[:, i])  # 选取主元
+            Pivot_index = np.argmax(np.abs(Augmented_Matrix[i:, i])) + i  # 选取主元
             Augmented_Matrix[[i, Pivot_index]] = Augmented_Matrix[
                 [Pivot_index, i]
             ]  # 交换矩阵的行
@@ -145,11 +145,11 @@ def Col_Pivot_Elimination(A, b):
 # *输入：矩阵A
 # *输出：矩阵L和矩阵U，满足LU=A，L是下三角矩阵，U是上三角矩阵(array)
 def LU_Decomposition(A):
-    U = np.array(A, dtype=np.float64)
+    U = np.array(A, dtype=np.complex64)
     row_A, col_A = U.shape
     L = np.array(
         [[(1 if i == j else 0) for i in range(col_A)] for j in range(col_A)],
-        dtype=np.float64,
+        dtype=np.complex64,
     )
 
     for i in range(min(row_A, col_A)):
@@ -188,7 +188,7 @@ def LU_Solve(A, b):
     if np.count_nonzero(Augmented_Matrix[:, 0:col_U]) < np.count_nonzero(
         Augmented_Matrix[:, -col_b:]
     ):
-        return "No solution"  # 判断矩阵是否有解
+        raise ValueError('No Solution')  # 判断矩阵是否有解
 
     for i in range(min(row_U, col_U) - 1, -1, -1):
         for j in range(i):

@@ -57,9 +57,9 @@ def Jacobi_Interation(A, b, Sol_0=None, N_Interation=8):
 
 
 # *用高斯-赛德尔方法迭代求解线性方程组Ax=b
-# *输入：矩阵A，等号右边向量b，可选参数：初始解（默认为0向量），迭代次数（默认为8）
+# *输入：矩阵A，等号右边向量b，可选参数：初始解（默认为0向量），迭代次数（默认为20）
 # *输出：方程解的列表
-def Gauss_Seidel_Interation(A, b, Sol=None, N_Interation=8):
+def Gauss_Seidel_Interation(A, b, Sol=None, N_Interation=20):
     A = np.asarray(A)
     b = np.asarray(b, dtype=np.float64)
     row_A, col_A = A.shape
