@@ -1,5 +1,5 @@
 import sympy as symp
-import numpa as np
+import numpy as np
 
 # * 二阶偏微分方程的一般形式为
 # * $a_{11}*u_{xx}+2*a_{12}*u_{xy}+a_{22}*u_{yy}+b_1*u_x+b_2*u_y+c*u$
@@ -23,5 +23,9 @@ def ToStdForm(f: list[int | float | symp.Symbol | symp.Expr | symp.Function]):
 
 
 # TODO 用有限差分法求解二阶偏微分方程
-def DiffPDE(f: list[int | float | symp.Symbol | symp.Expr | symp.Function],StdForm: str ,**InitialValue):
+def DiffPDE(
+    f: list[int | float | symp.Symbol | symp.Expr | symp.Function],
+    StdForm: str,
+    **DefCond
+):
     return None
