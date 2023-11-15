@@ -3,6 +3,9 @@ import sympy as symp
 
 
 # TODO 以下程序均不支持符号变量或符号表达式作为边界条件
+# TODO 以下程序均不支持包含导数的边界条件
+# TODO 以下程序均不支持在复数域上求解偏微分方程
+
 def Euler_ODE(
     f: symp.Expr | list[symp.Expr],
     symbol: list[symp.Symbol],
