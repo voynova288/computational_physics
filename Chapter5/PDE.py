@@ -25,20 +25,21 @@ def ToStdForm(f: list[int | float | symp.Symbol | symp.Expr | symp.Function]):
     return None
 
 
-# * 用有限差分法的六点对称格式求解扩散方程 u_t=f[0]*u_{xx}
-# * DefCond是一个字典，给定初值条件和边界条件{(t_0,x_0):u0,(t_1,x_1):u1,……},Cond是一个symp.Eq
-# TODO Debug
-# TODO 目前仅支持a是常数的情况
-# TODO 目前仅支持第一类边界条件
-# TODO 目前仅支持在实数域上求解
 def Diff_Diffusion(
     a: int | float | symp.Symbol | symp.Expr | symp.Function,
     tao: int | float | None = None,
     h: int | float | None = None,
-    step: int = 8,
-    u0: symp.Expr | list[int | float] = None,
+    step: int = 50,
     **DefCond
 ):
+    # * 用有限差分法的六点对称格式求解扩散方程 u_t=f[0]*u_{xx}
+    # * DefCond是一个字典，给定初值条件和边界条件{(t_0,x_0):u0,(t_1,x_1):u1,……},Cond是一个symp.Eq
+    # TODO Debug
+    # TODO 目前仅支持a是常数的情况
+    # TODO 目前仅支持第一类边界条件
+    # TODO 目前仅支持在实数域上求解
+    # TODO 目前无法处理边界点与差分格点不重合的问题
+    # TODO 目前只能处理有一个初值条件的情况，有多个初值条件时只保留时间最小的那个初值条件
     if not isinstance(a, (int, float)):
         raise ValueError(
             "Sorry, this program can only solve equations where a is constant"
@@ -47,19 +48,12 @@ def Diff_Diffusion(
     def get_x(key):
         return key[1]
 
-    if isinstance(u0, symp.Expr):
-        boundary_symbol_ = list(u0.free_symbols())
-        if len(boundary_symbol_) != 1:
-            raise ValueError(
-                "Sorry, boundary conditions can contain at most one x variable"
-            )
-        else:
-            x = boundary_symbol_[0]
-    else:
-        x = symp.symbols("x")
+    def get_t(key):
+        return key[0]
 
     boundary_ = DefCond.keys()
     boundary = [min(boundary_, key=get_x), max(boundary_, key=get_x)]
+    u0 = DefCond[min(boundary_, key=get_t)]
 
     if h is None:
         if not isinstance(u0, list):
@@ -70,12 +64,18 @@ def Diff_Diffusion(
         tao = 0.01
     xlist = range(boundary[0][1], boundary[1][1] + h, h)
 
-    if u0 is None:
-        uk = [1 for i in range(len(xlist - 2))]
-    elif isinstance(u0, symp.Expr):
-        uk = [u0.subs({x: xlist[i]}) for i in range(len(xlist - 2))]
+    u = np.zeros(step + 1, len(xlist) - 2)
+    if isinstance(u0, symp.Expr):
+        x_ = list(u0.free_symbols())
+        if len(x_) != 1:
+            raise ValueError(
+                "Sorry, boundary conditions can contain at most one x variable"
+            )
+        else:
+            x = x_[0]
+        u[0] = [u0.subs({x: xlist[i]}) for i in range(len(xlist - 2))]
     elif isinstance(u0, list[int | float]):
-        uk = [u0[i] for i in range(len(xlist - 2))]
+        u[0] = [u0[i] for i in range(len(xlist - 2))]
 
     Lambda = a * tao / (h**2)
     u_0 = DefCond[boundary[0]]
@@ -109,9 +109,9 @@ def Diff_Diffusion(
                 for i in range(len(xlist) - 2)
             ]
         )
-        uk = np.linalg.solve(A, np.dot(B, uk) + Ck)
+        u[k + 1] = np.linalg.solve(A, np.dot(B, u[k]) + Ck)
 
-    return xlist, uk
+    return xlist, u
 
 
 # TODO 用有限差分法求解二阶偏微分方程
@@ -127,3 +127,7 @@ def DiffPDE(
 
 
 # * 以下是测试用代码
+x = symp.symbols("x")
+xlist, ylist = Diff_Diffusion(
+    1, step=50, DefCond={(None, 0): 0, (None, 1): 0, (0, x): symp.sin(np.pi * x)}
+)
