@@ -7,6 +7,9 @@ import numpy as np
 # * 理论上所有的二阶偏微分方程都可以化为下面三种标准形式
 # * 判别式$\Delta={a_{12}}^2-2*a_{11}*a_{22}$
 # * $\Delta<0$时方程是椭圆型的，$\Delta=0$时方程式双曲型的，$\Delta>0$方程式抛物型的
+# * 椭圆型 u_{xx}+u_{yy}+a*u_x+b*u_y+c*u+d=0
+# * 双曲型 u_{xx}-u_{yy}+a*u_x+b*u_y+c*u+d=0
+# * 抛物型 u_{xx}+a*u_x+b*u_y+c*u+d=0
 # * 具体的形式可以查阅网上资料，也就是说只要我们可以求解三种偏微分方程，理论上我们就可以求解所有的偏微分方程
 # TODO 以下程序均不支持包含导数的边界条件
 # * 二阶偏微分方程的边值问题主要分为三类
@@ -22,10 +25,105 @@ def ToStdForm(f: list[int | float | symp.Symbol | symp.Expr | symp.Function]):
     return None
 
 
+# * 用有限差分法的六点对称格式求解扩散方程 u_t=f[0]*u_{xx}
+# * DefCond是一个字典，给定初值条件和边界条件{(t_0,x_0):u0,(t_1,x_1):u1,……},Cond是一个symp.Eq
+# TODO Debug
+# TODO 目前仅支持a是常数的情况
+# TODO 目前仅支持第一类边界条件
+# TODO 目前仅支持在实数域上求解
+def Diff_Diffusion(
+    a: int | float | symp.Symbol | symp.Expr | symp.Function,
+    tao: int | float | None = None,
+    h: int | float | None = None,
+    step: int = 8,
+    u0: symp.Expr | list[int | float] = None,
+    **DefCond
+):
+    if not isinstance(a, (int, float)):
+        raise ValueError(
+            "Sorry, this program can only solve equations where a is constant"
+        )
+
+    def get_x(key):
+        return key[1]
+
+    if isinstance(u0, symp.Expr):
+        boundary_symbol_ = list(u0.free_symbols())
+        if len(boundary_symbol_) != 1:
+            raise ValueError(
+                "Sorry, boundary conditions can contain at most one x variable"
+            )
+        else:
+            x = boundary_symbol_[0]
+    else:
+        x = symp.symbols("x")
+
+    boundary_ = DefCond.keys()
+    boundary = [min(boundary_, key=get_x), max(boundary_, key=get_x)]
+
+    if h is None:
+        if not isinstance(u0, list):
+            h = (boundary[1][1] - boundary[0][1]) / 100
+        else:
+            h = (boundary[1][1] - boundary[0][1]) / (len(u0) + 1)
+    if tao is None:
+        tao = 0.01
+    xlist = range(boundary[0][1], boundary[1][1] + h, h)
+
+    if u0 is None:
+        uk = [1 for i in range(len(xlist - 2))]
+    elif isinstance(u0, symp.Expr):
+        uk = [u0.subs({x: xlist[i]}) for i in range(len(xlist - 2))]
+    elif isinstance(u0, list[int | float]):
+        uk = [u0[i] for i in range(len(xlist - 2))]
+
+    Lambda = a * tao / (h**2)
+    u_0 = DefCond[boundary[0]]
+    u_n = DefCond[boundary[1]]
+    B = [
+        [
+            1 - 2 * Lambda if i == j else Lambda if np.abs(i - j) == 1 else 0
+            for j in range(len(xlist) - 2)
+        ]
+        for i in range(len(xlist) - 2)
+    ]
+    A = [
+        [
+            1 + 2 * Lambda if i == j else -Lambda if np.abs(i - j) == 1 else 0
+            for j in range(len(xlist) - 2)
+        ]
+        for i in range(len(xlist) - 2)
+    ]
+
+    for k in range(step):
+        Ck = np.array(
+            [
+                [
+                    Lambda * u_0 ** (k + 1) + Lambda * u_0**k
+                    if i == j == 1
+                    else Lambda * u_n ** (k + 1) + Lambda * u_n**k
+                    if i == j == (len(xlist) - 3)
+                    else 0
+                    for j in range(len(xlist) - 2)
+                ]
+                for i in range(len(xlist) - 2)
+            ]
+        )
+        uk = np.linalg.solve(A, np.dot(B, uk) + Ck)
+
+    return xlist, uk
+
+
 # TODO 用有限差分法求解二阶偏微分方程
 def DiffPDE(
     f: list[int | float | symp.Symbol | symp.Expr | symp.Function],
     StdForm: str,
     **DefCond
 ):
+    # * StdForm为标准形式
+    # * 若StdForm == "para"，表示偏微分方程为抛物型偏微分方程，则方程为
+    # * u_{xx}+f[0]*u_x+f[1]*u_y+f[2]*u+f[3]=0
     return None
+
+
+# * 以下是测试用代码
