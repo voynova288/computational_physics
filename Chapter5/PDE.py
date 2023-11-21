@@ -1,5 +1,6 @@
 import sympy as symp
 import numpy as np
+import matplotlib.pyplot as plt
 
 # * 二阶偏微分方程的一般形式为
 # * $a_{11}*u_{xx}+2*a_{12}*u_{xy}+a_{22}*u_{yy}+b_1*u_x+b_2*u_y+c*u$
@@ -34,84 +35,171 @@ def Diff_Diffusion(
 ):
     # * 用有限差分法的六点对称格式求解扩散方程 u_t=f[0]*u_{xx}
     # * DefCond是一个字典，给定初值条件和边界条件{(t_0,x_0):u0,(t_1,x_1):u1,……},Cond是一个symp.Eq
-    # TODO Debug
+    # TODO Debug：目前还没有调试边值问题是符号表达式的情况
     # TODO 目前仅支持a是常数的情况
     # TODO 目前仅支持第一类边界条件
     # TODO 目前仅支持在实数域上求解
     # TODO 目前无法处理边界点与差分格点不重合的问题
     # TODO 目前只能处理有一个初值条件的情况，有多个初值条件时只保留时间最小的那个初值条件
+    DefCond = DefCond["DefCond"]
     if not isinstance(a, (int, float)):
         raise ValueError(
             "Sorry, this program can only solve equations where a is constant"
         )
 
-    def get_x(key):
-        return key[1]
+    def get_x_p(key):
+        if isinstance(key[1], (int, float)):
+            return key[1]
+        else:
+            return float("inf")
 
-    def get_t(key):
-        return key[0]
+    def get_x_n(key):
+        if isinstance(key[1], (int, float)):
+            return key[1]
+        else:
+            return float("-inf")
 
-    boundary_ = DefCond.keys()
-    boundary = [min(boundary_, key=get_x), max(boundary_, key=get_x)]
-    u0 = DefCond[min(boundary_, key=get_t)]
+    def get_t_p(key):
+        if isinstance(key[0], (int, float)):
+            return key[0]
+        else:
+            return float("inf")
+
+    def get_t_n(key):
+        if isinstance(key[0], (int, float)):
+            return key[0]
+        else:
+            return float("inf")
+
+    boundary_ = list(DefCond.keys())
+    boundary = [
+        min(boundary_, key=get_x_p),
+        max(boundary_, key=get_x_n),
+    ]  # boundary是边值条件
+    u0_key = min(boundary_, key=get_t_p)  # u0是初值条件
+    u0 = DefCond[u0_key]
 
     if h is None:
         if not isinstance(u0, list):
             h = (boundary[1][1] - boundary[0][1]) / 100
+            length_x = 101
         else:
             h = (boundary[1][1] - boundary[0][1]) / (len(u0) + 1)
+            length_x = len(u0) + 2
+    else:
+        length_x = int((boundary[1][1] - boundary[0][1]) / h + 1)
+
     if tao is None:
         tao = 0.01
-    xlist = range(boundary[0][1], boundary[1][1] + h, h)
+    xlist = [boundary[0][1] + h * k for k in range(length_x)]
+    tlist = [u0_key[0] + tao * k for k in range(step + 1)]
 
-    u = np.zeros(step + 1, len(xlist) - 2)
+    if isinstance(DefCond[boundary[0]], symp.Expr):  # 边值含t的情况
+        t = list(DefCond[boundary[0]].free_symbols)
+        if len(t) != 1:
+            raise ValueError("Boundary conditions can contain at most one t variable")
+        else:
+            t = t[0]
+        u_0 = [DefCond[boundary[0]].subs({t, tlist[i]}) for i in range(step + 1)]
+    elif isinstance(DefCond[boundary[0]], int | float):
+        u_0 = [DefCond[boundary[0]] for i in range(step + 1)]
+    else:
+        raise ValueError("Invalid boundary condition input")
+
+    if isinstance(DefCond[boundary[1]], symp.Expr):  # 边值含t的情况
+        if t != list(DefCond[boundary[1]].free_symbols)[0]:
+            raise ValueError("Boundary conditions can contain at most one t variable")
+        else:
+            t = list(DefCond[boundary[1]].free_symbols)
+        if len(t) != 1:
+            raise ValueError("Boundary conditions can contain at most one t variable")
+        else:
+            t = t[0]
+        u_n = [DefCond[boundary[1]].subs({t, tlist[i]}) for i in range(step + 1)]
+    elif isinstance(DefCond[boundary[1]], int | float):
+        u_n = [DefCond[boundary[1]] for i in range(step + 1)]
+    else:
+        raise ValueError("Invalid boundary condition input")
+
     if isinstance(u0, symp.Expr):
-        x_ = list(u0.free_symbols())
+        x_ = list(u0.free_symbols)
         if len(x_) != 1:
             raise ValueError(
                 "Sorry, boundary conditions can contain at most one x variable"
             )
         else:
             x = x_[0]
-        u[0] = [u0.subs({x: xlist[i]}) for i in range(len(xlist - 2))]
+        u = np.array(
+            [
+                [
+                    u_0[i]
+                    if j == 0
+                    else u_n[i]
+                    if j == length_x - 1
+                    else u0.subs({x: xlist[j]})
+                    if i == 0
+                    else 0
+                    for j in range(length_x)
+                ]
+                for i in range(step + 1)
+            ],
+            dtype=np.float64,
+        )
     elif isinstance(u0, list[int | float]):
-        u[0] = [u0[i] for i in range(len(xlist - 2))]
+        u = np.array(
+            [
+                [
+                    u_0[i]
+                    if j == 0
+                    else u_n[i]
+                    if j == length_x - 1
+                    else u0[j]
+                    if i == 0
+                    else 0
+                    for j in range(length_x)
+                ]
+                for i in range(length_x)
+            ],
+            dtype=np.float64,
+        )
+    Lambda = a * tao / (2*h**2)
 
-    Lambda = a * tao / (h**2)
-    u_0 = DefCond[boundary[0]]
-    u_n = DefCond[boundary[1]]
-    B = [
+    B = np.array(
         [
-            1 - 2 * Lambda if i == j else Lambda if np.abs(i - j) == 1 else 0
-            for j in range(len(xlist) - 2)
-        ]
-        for i in range(len(xlist) - 2)
-    ]
-    A = [
+            [
+                1 - 2 * Lambda if i == j else Lambda if np.abs(i - j) == 1 else 0
+                for j in range(length_x - 2)
+            ]
+            for i in range(length_x - 2)
+        ],
+        dtype=np.float64,
+    )
+    A = np.array(
         [
-            1 + 2 * Lambda if i == j else -Lambda if np.abs(i - j) == 1 else 0
-            for j in range(len(xlist) - 2)
-        ]
-        for i in range(len(xlist) - 2)
-    ]
+            [
+                1 + 2 * Lambda if i == j else -Lambda if np.abs(i - j) == 1 else 0
+                for j in range(length_x - 2)
+            ]
+            for i in range(length_x - 2)
+        ],
+        dtype=np.float64,
+    )
 
     for k in range(step):
         Ck = np.array(
             [
-                [
-                    Lambda * u_0 ** (k + 1) + Lambda * u_0**k
-                    if i == j == 1
-                    else Lambda * u_n ** (k + 1) + Lambda * u_n**k
-                    if i == j == (len(xlist) - 3)
-                    else 0
-                    for j in range(len(xlist) - 2)
-                ]
-                for i in range(len(xlist) - 2)
-            ]
+                Lambda * u_0[k + 1] + Lambda * u_0[k]
+                if i == 1
+                else Lambda * u_n[k + 1] + Lambda * u_n[k]
+                if i == (length_x - 3)
+                else 0
+                for i in range(length_x - 2)
+            ],
+            dtype=np.float64,
         )
-        u[k + 1] = np.linalg.solve(A, np.dot(B, u[k]) + Ck)
+        u[k + 1, 1:-1] = np.linalg.solve(A, np.dot(B, u[k, 1:-1]) + Ck)
 
-    return xlist, u
+    return xlist, tlist, u
 
 
 # TODO 用有限差分法求解二阶偏微分方程
@@ -127,7 +215,18 @@ def DiffPDE(
 
 
 # * 以下是测试用代码
-x = symp.symbols("x")
-xlist, ylist = Diff_Diffusion(
-    1, step=50, DefCond={(None, 0): 0, (None, 1): 0, (0, x): symp.sin(np.pi * x)}
+""" x = symp.symbols("x")
+t = symp.symbols("t")
+xlist, tlist, ylist = Diff_Diffusion(
+    1, step=50, h=0.01, DefCond={(t, 0): 0, (t, 1): 0, (0, x): symp.sin(np.pi * x)}
 )
+
+y = [ylist[l][51] for l in range(len(ylist))]
+y_exp_list = [symp.exp(-np.pi**2 * t).subs({t: element}) for element in tlist]
+
+plt.plot(tlist, y)
+plt.plot(tlist, y_exp_list)
+plt.title("Plot")  # 添加标题
+plt.xlabel("X Axis")  # 添加x轴标签
+plt.ylabel("Y Axis")  # 添加y轴标签
+plt.show()  """
