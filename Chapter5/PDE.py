@@ -1,5 +1,6 @@
 import sympy as symp
 import numpy as np
+import cmath as cmath
 import matplotlib.pyplot as plt
 
 # * 二阶偏微分方程的一般形式为
@@ -18,6 +19,9 @@ import matplotlib.pyplot as plt
 # * 2.边界上各点的法向微商已知
 # * 3.边界上各点的函数值与法向微商的线性关系已知
 # TODO 以下代码仅支持第一种边值问题
+
+
+I = cmath.sqrt(-1)
 
 
 # TODO 将一般形式的二阶偏微分方程化为标准形式
@@ -162,7 +166,7 @@ def Diff_Diffusion(
             ],
             dtype=np.float64,
         )
-    Lambda = a * tao / (2*h**2)
+    Lambda = a * tao / (2 * h**2)
 
     B = np.array(
         [
@@ -202,6 +206,188 @@ def Diff_Diffusion(
     return xlist, tlist, u
 
 
+def Diff_Schrodinger(
+    V: int | float | complex | symp.Symbol | symp.Expr | symp.Function,
+    tao: int | float | None = None,
+    h: int | float | None = None,
+    step: int = 50,
+    symbols: list[symp.Symbol] = None,
+    **DefCond
+):
+    # * 求解薛定谔方程I*\hbar*\phi_t=-(\hbar^2/2m)\phi_{xx}+V(x)\phi
+    # *采用自然单位制\hbar=1，令\phi'=phi/(2*m)，方程变成\phi'_t=I*phi'_{xx}-I*V(x)*\phi'
+    # TODO 这个和上面那个函数可以合成成一个程序
+    DefCond = DefCond["DefCond"]
+
+    def get_x_p(key):
+        if isinstance(key[1], (int, float)):
+            return key[1]
+        else:
+            return float("inf")
+
+    def get_x_n(key):
+        if isinstance(key[1], (int, float)):
+            return key[1]
+        else:
+            return float("-inf")
+
+    def get_t_p(key):
+        if isinstance(key[0], (int, float)):
+            return key[0]
+        else:
+            return float("inf")
+
+    def get_t_n(key):
+        if isinstance(key[0], (int, float)):
+            return key[0]
+        else:
+            return float("inf")
+
+    boundary_ = list(DefCond.keys())
+    boundary = [
+        min(boundary_, key=get_x_p),
+        max(boundary_, key=get_x_n),
+    ]  # boundary是边值条件
+    u0_key = min(boundary_, key=get_t_p)  # u0是初值条件
+    u0 = DefCond[u0_key]
+
+    if h is None:
+        if not isinstance(u0, list):
+            h = (boundary[1][1] - boundary[0][1]) / 100
+            length_x = 101
+        else:
+            h = (boundary[1][1] - boundary[0][1]) / (len(u0) + 1)
+            length_x = len(u0) + 2
+    else:
+        length_x = int((boundary[1][1] - boundary[0][1]) / h + 1)
+
+    if tao is None:
+        tao = 0.01
+    xlist = [boundary[0][1] + h * k for k in range(length_x)]
+    tlist = [u0_key[0] + tao * k for k in range(step + 1)]
+
+    if symbols != None:  # 指定符号后可以支持边界条件中有多个变量
+        t = symbols[0]
+        x = symbols[1]
+
+    if isinstance(DefCond[boundary[0]], symp.Expr):  # 边值含t的情况
+        if symbols == None:
+            t = list(DefCond[boundary[0]].free_symbols)
+            if len(t) != 1:
+                raise ValueError("Cannot determine t")
+            else:
+                t = t[0]
+        u_0 = [DefCond[boundary[0]].subs({t, tlist[i]}) for i in range(step + 1)]
+    elif isinstance(DefCond[boundary[0]], int | float):
+        u_0 = [DefCond[boundary[0]] for i in range(step + 1)]
+    else:
+        raise ValueError("Invalid boundary condition input")
+
+    if isinstance(DefCond[boundary[1]], symp.Expr):  # 边值含t的情况
+        if symbols == None:
+            if t != list(DefCond[boundary[1]].free_symbols)[0]:
+                raise ValueError("Cannot determine t")
+            else:
+                t = list(DefCond[boundary[1]].free_symbols)
+            if len(t) != 1:
+                raise ValueError("Cannot determine t")
+            else:
+                t = t[0]
+        u_n = [DefCond[boundary[1]].subs({t, tlist[i]}) for i in range(step + 1)]
+    elif isinstance(DefCond[boundary[1]], int | float):
+        u_n = [DefCond[boundary[1]] for i in range(step + 1)]
+    else:
+        raise ValueError("Invalid boundary condition input")
+
+    if isinstance(u0, symp.Expr):
+        if symbols == None:
+            x_ = list(u0.free_symbols)
+            if len(x_) != 1:
+                raise ValueError(
+                    "Sorry, boundary conditions can contain at most one x variable"
+                )
+            else:
+                x = x_[0]
+        u = np.array(
+            [
+                [
+                    u_0[i]
+                    if j == 0
+                    else u_n[i]
+                    if j == length_x - 1
+                    else u0.subs({x: xlist[j]})
+                    if i == 0
+                    else 0
+                    for j in range(length_x)
+                ]
+                for i in range(step + 1)
+            ]
+        ).astype(np.complex128)
+    elif isinstance(u0, list[int | float | complex]):
+        u = np.array(
+            [
+                [
+                    u_0[i]
+                    if j == 0
+                    else u_n[i]
+                    if j == length_x - 1
+                    else u0[j]
+                    if i == 0
+                    else 0
+                    for j in range(length_x)
+                ]
+                for i in range(length_x)
+            ],
+        ).astype(np.complex128)
+    
+    Lambda = I * tao / (2 * h**2)
+    if isinstance(V, (int | float | complex)):
+        Vlist = [V for i in range(length_x - 2)]
+    elif isinstance(V, (symp.Expr, symp.Function, symp.Symbol)):
+        Vlist = [V.subs({x: element}) for element in xlist[1:-1]]
+
+    B = np.array(
+        [
+            [
+                1 - 2 * Lambda - I * tao * Vlist[j] / 2
+                if i == j
+                else Lambda
+                if np.abs(i - j) == 1
+                else 0
+                for j in range(length_x - 2)
+            ]
+            for i in range(length_x - 2)
+        ],
+    ).astype(np.complex128)
+    A = np.array(
+        [
+            [
+                1 + 2 * Lambda + I * tao * Vlist[j] / 2
+                if i == j
+                else -Lambda
+                if np.abs(i - j) == 1
+                else 0
+                for j in range(length_x - 2)
+            ]
+            for i in range(length_x - 2)
+        ],
+    ).astype(np.complex128)
+
+    for k in range(step):
+        Ck = np.array(
+            [
+                Lambda * u_0[k + 1] + Lambda * u_0[k]
+                if i == 1
+                else Lambda * u_n[k + 1] + Lambda * u_n[k]
+                if i == (length_x - 3)
+                else 0
+                for i in range(length_x - 2)
+            ],
+        ).astype(np.complex128)
+        u[k + 1, 1:-1] = np.linalg.solve(A, np.dot(B, u[k, 1:-1]) + Ck)
+    return xlist, tlist, u
+
+
 # TODO 用有限差分法求解二阶偏微分方程
 def DiffPDE(
     f: list[int | float | symp.Symbol | symp.Expr | symp.Function],
@@ -215,9 +401,33 @@ def DiffPDE(
 
 
 # * 以下是测试用代码
-""" x = symp.symbols("x")
+x = symp.symbols("x")
 t = symp.symbols("t")
-xlist, tlist, ylist = Diff_Diffusion(
+
+""" x_0 = 0
+V_0 = 10
+sigma = 0.5
+k_0 = 1
+a = 1
+V = symp.Piecewise((V_0, np.abs(x - x_0) <= a), (0, np.abs(x - x_0) > a))
+xlist, tlist, ylist = Diff_Schrodinger(
+    V,
+    symbols=[t, x],
+    DefCond={
+        (0, x): symp.exp(I * k_0 * x - (x - x_0) ** 2) * np.log(20) / (2 * sigma),
+        (t, -2): 0,
+        (t, 2): 0,
+    },
+    step=50,
+)
+
+plt.plot(xlist, ylist[20])
+plt.title("Plot")  # 添加标题
+plt.xlabel("X Axis")  # 添加x轴标签
+plt.ylabel("Y Axis")  # 添加y轴标签
+plt.show()  """
+
+"""xlist, tlist, ylist = Diff_Diffusion(
     1, step=50, h=0.01, DefCond={(t, 0): 0, (t, 1): 0, (0, x): symp.sin(np.pi * x)}
 )
 
