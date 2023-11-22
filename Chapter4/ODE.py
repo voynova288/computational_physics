@@ -36,7 +36,7 @@ def Euler_ODE(
         raise ValueError("Invalid expressions or symbols input")
 
     X = [X0 + h * k for k in range(step + 1)]  #!一阶常微分x的初值是相同的
-    Y = [[0]*len(f)]*(step+1)
+    Y = [[0] * len(f)] * (step + 1)
     Y[0] = Y0
 
     if method == "explicit":
@@ -45,7 +45,9 @@ def Euler_ODE(
                 (symbol[0], X[i]) if j == 0 else (symbol[j], Y[i][j - 1])
                 for j in range(len(f) + 1)
             ]
-            Y[i + 1] = [Y[i][j] + h * f[j].subs(subslist) for j in range(len(f))]
+            Y[i + 1] = [
+                symp.N(Y[i][j] + h * f[j].subs(subslist)) for j in range(len(f))
+            ]
 
     elif method == "estimate-corretion":
         for i in range(step):
@@ -53,13 +55,15 @@ def Euler_ODE(
                 (symbol[0], X[i]) if j == 0 else (symbol[j], Y[i][j - 1])
                 for j in range(len(f) + 1)
             ]
-            Ybar = [Y[i][j] + h * f[j].subs(subslist) for j in range(len(f))]
+            Ybar = [symp.N(Y[i][j] + h * f[j].subs(subslist)) for j in range(len(f))]
             subslistbar = [
                 (symbol[0], X[i + 1]) if j == 0 else (symbol[j], Ybar[j - 1])
                 for j in range(len(f) + 1)
             ]
             Y[i + 1] = [
-                Y[i][j] + (h / 2) * (f[j].subs(subslist) + f[j].subs(subslistbar))
+                symp.N(
+                    Y[i][j] + (h / 2) * (f[j].subs(subslist) + f[j].subs(subslistbar))
+                )
                 for j in range(len(f))
             ]
 
@@ -70,26 +74,37 @@ def Euler_ODE(
             raise ValueError("Only supports solving one ordinary differential equation")
         y = [0] * (step + 1)
         x = [X0 + h * k for k in range(step + 1)]
-        y[0] = Y[0]
-        f = f[0]
+        y[0] = Y0[0]
+        func_y = symp.Function("func_y")(symbol[0])
+        f = f[0].subs({symbol[1]: func_y})
+
+        def diff_f(
+            f: symp.Expr, y: symp.Function, x: symp.Symbol, order: int
+        ) -> symp.Expr:
+            for j in range(order):
+                f = symp.diff(f, symbol[0]).subs({symp.diff(y, x): f})
+            return f
+
         y_derivative = [
-            (y[0] if i == 0 else f)
-            if i <= 1
-            else symp.idiff(f, symbol[1], symbol[0], i - 1)
+            (y[0] if i == 0 else f) if i <= 1 else diff_f(f, func_y, symbol[0], i - 1)
             for i in range(taylor_order)
         ]
 
         for i in range(step):
-            y[i + 1] = y[i] + sum(
-                (
-                    y_derivative[j].subs({symbol[0]: x[i], symbol[1]: y[i]})
-                    * (h**j)
-                    * (1 / symp.factorial(j))
-                    if j >= 1
-                    else 0
+            y[i + 1] = symp.N(
+                y[i]
+                + sum(
+                    (
+                        y_derivative[j].subs({symbol[0]: x[i], func_y: y[i]})
+                        * (h**j)
+                        * (1 / symp.factorial(j))
+                        if j >= 1
+                        else 0
+                    )
                 )
                 for j in range(taylor_order)
             )
+        return x, y
     if len(Y[0]) == 1:
         Y = [Y[i][0] for i in range(len(Y))]
         return X, Y
@@ -125,30 +140,30 @@ def RK4(
             (symbol[0], X[i]) if j == 0 else (symbol[j], Y[i][j - 1])
             for j in range(len(f) + 1)
         ]
-        K1 = [f[j].subs(subsK1) for j in range(len(f))]
+        K1 = [symp.N(f[j].subs(subsK1)) for j in range(len(f))]
         subsK2 = [
             (symbol[0], X[i] + h / 2)
             if j == 0
             else (symbol[j], Y[i][j - 1] + (h / 2) * K1[j - 1])
             for j in range(len(f) + 1)
         ]
-        K2 = [f[j].subs(subsK2) for j in range(len(f))]
+        K2 = [symp.N(f[j].subs(subsK2)) for j in range(len(f))]
         subsK3 = [
             (symbol[0], X[i] + h / 2)
             if j == 0
             else (symbol[j], Y[i][j - 1] + (h / 2) * K2[j - 1])
             for j in range(len(f) + 1)
         ]
-        K3 = [f[j].subs(subsK3) for j in range(len(f))]
+        K3 = [symp.N(f[j].subs(subsK3)) for j in range(len(f))]
         subsK4 = [
             (symbol[0], X[i + 1])
             if j == 0
             else (symbol[j], Y[i][j - 1] + (h / 2) * K3[j - 1])
             for j in range(len(f) + 1)
         ]
-        K4 = [f[j].subs(subsK4) for j in range(len(f))]
+        K4 = [symp.N(f[j].subs(subsK4)) for j in range(len(f))]
         Y[i + 1] = [
-            Y[i][j] + (h / 6) * (K1[j] + 2 * K2[j] + 2 * K3[j] + K4[j])
+            symp.N(Y[i][j] + (h / 6) * (K1[j] + 2 * K2[j] + 2 * K3[j] + K4[j]))
             for j in range(len(f))
         ]
 
@@ -431,11 +446,3 @@ def LeastSquareODE(
         return fitting_sol
 
 
-# *以下是测试代码
-""" x = symp.symbols("x")
-y = symp.symbols("y")
-xlist1, ylist1 = Euler_ODE(-y + x + 1, [x, y], 0, 1, method="explicit",step=8)
-xlist2, ylist2 = Euler_ODE(-y + x + 1, [x, y], 0, 1, step=8,method="estimate-corretion")
-xlist3 = xlist2.copy()
-ylist3 = [(x + symp.exp(-x)).subs({x: element}) for element in xlist3]
-print(ylist2) """

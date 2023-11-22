@@ -400,43 +400,6 @@ def DiffPDE(
     return None
 
 
-# * 以下是测试用代码
-x = symp.symbols("x")
-t = symp.symbols("t")
 
-""" x_0 = 0
-V_0 = 10
-sigma = 0.5
-k_0 = 1
-a = 1
-V = symp.Piecewise((V_0, np.abs(x - x_0) <= a), (0, np.abs(x - x_0) > a))
-xlist, tlist, ylist = Diff_Schrodinger(
-    V,
-    symbols=[t, x],
-    DefCond={
-        (0, x): symp.exp(I * k_0 * x - (x - x_0) ** 2) * np.log(20) / (2 * sigma),
-        (t, -2): 0,
-        (t, 2): 0,
-    },
-    step=50,
-)
 
-plt.plot(xlist, ylist[20])
-plt.title("Plot")  # 添加标题
-plt.xlabel("X Axis")  # 添加x轴标签
-plt.ylabel("Y Axis")  # 添加y轴标签
-plt.show()  """
 
-"""xlist, tlist, ylist = Diff_Diffusion(
-    1, step=50, h=0.01, DefCond={(t, 0): 0, (t, 1): 0, (0, x): symp.sin(np.pi * x)}
-)
-
-y = [ylist[l][51] for l in range(len(ylist))]
-y_exp_list = [symp.exp(-np.pi**2 * t).subs({t: element}) for element in tlist]
-
-plt.plot(tlist, y)
-plt.plot(tlist, y_exp_list)
-plt.title("Plot")  # 添加标题
-plt.xlabel("X Axis")  # 添加x轴标签
-plt.ylabel("Y Axis")  # 添加y轴标签
-plt.show()  """
