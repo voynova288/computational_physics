@@ -6,6 +6,7 @@ import sympy as symp
 # TODO 以下程序均不支持包含导数的边界条件
 # TODO 以下程序均不支持在复数域上求解偏微分方程
 
+
 def Euler_ODE(
     f: symp.Expr | list[symp.Expr],
     symbol: list[symp.Symbol],
@@ -34,8 +35,8 @@ def Euler_ODE(
     if len(symbol) != len(f) + 1:
         raise ValueError("Invalid expressions or symbols input")
 
-    X = [X0 + h * k for k in range(step + 1)]  #!x的初值是相同的
-    Y = [[0] * len(f)] * (step + 1)
+    X = [X0 + h * k for k in range(step + 1)]  #!一阶常微分x的初值是相同的
+    Y = [[0]*len(f)]*(step+1)
     Y[0] = Y0
 
     if method == "explicit":
@@ -89,8 +90,9 @@ def Euler_ODE(
                 )
                 for j in range(taylor_order)
             )
-    if len(Y) == 1:
-        return X, Y[0]
+    if len(Y[0]) == 1:
+        Y = [Y[i][0] for i in range(len(Y))]
+        return X, Y
     else:
         return X, Y
 
@@ -150,8 +152,9 @@ def RK4(
             for j in range(len(f))
         ]
 
-    if len(Y) == 1:
-        return X, Y[0]
+    if len(Y[0]) == 1:
+        Y = [Y[i][0] for i in range(len(Y))]
+        return X, Y
     else:
         return X, Y
 
@@ -427,3 +430,12 @@ def LeastSquareODE(
     else:
         return fitting_sol
 
+
+# *以下是测试代码
+""" x = symp.symbols("x")
+y = symp.symbols("y")
+xlist1, ylist1 = Euler_ODE(-y + x + 1, [x, y], 0, 1, method="explicit",step=8)
+xlist2, ylist2 = Euler_ODE(-y + x + 1, [x, y], 0, 1, step=8,method="estimate-corretion")
+xlist3 = xlist2.copy()
+ylist3 = [(x + symp.exp(-x)).subs({x: element}) for element in xlist3]
+print(ylist2) """
