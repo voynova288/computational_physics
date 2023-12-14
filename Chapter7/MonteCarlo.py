@@ -4,7 +4,6 @@ import random
 import scipy.integrate as integrate
 import scipy.optimize as opt
 import scipy.interpolate as interp
-
 import matplotlib.pyplot as plt
 
 
@@ -136,3 +135,110 @@ def Non_Uniform_Random(
                         continue
 
     return points
+
+
+class Ising2D:
+    k = 1.380649 * 10 ** (-23)
+
+    def __init__(
+        self,
+        T: int | float,
+        J: int | float,
+        B: int | float,
+        configuration: list = None,
+        size: tuple = None,
+    ) -> None:
+        self.T = T
+        self.J = J
+        self.B = B
+
+        if (configuration == None) & (size == None):
+            raise ValueError("No input")
+        elif configuration == None:
+            configuration = [
+                [
+                    0
+                    if (i == (0 | size[1] + 1)) | (j == (0 | size[0] + 1))
+                    else random.choice([-1, 1])
+                    for i in range(size[1] + 2)
+                ]
+                for j in range(size[0] + 2)
+            ]
+        elif size == None:
+            size = (len(configuration), len(configuration[0]))
+            for i in range(len(configuration)):
+                configuration[i].insert(0, 0)
+                configuration[i].append(0)
+            configuration.insert([0 for i in range(len(configuration[0]))], 0)
+            configuration.append([0 for i in range(len(configuration[0]))], 0)
+
+        self.size = size
+        self.configuration = configuration
+
+    def Evolution(self, step: int):
+        for i in range(step):
+            coordinate = (
+                random.randint(1, self.size[0]),
+                random.randint(1, self.size[1]),
+            )
+            self.configuration[coordinate[0]][coordinate[1]] = -self.configuration[
+                coordinate[0]
+            ][coordinate[1]]
+            delta_E = (
+                -2
+                * self.J
+                * self.configuration[coordinate[0]][coordinate[1]]
+                * (
+                    self.configuration[coordinate[0] + 1][coordinate[1]]
+                    + self.configuration[coordinate[0] - 1][coordinate[1]]
+                    + self.configuration[coordinate[0]][coordinate[1] + 1]
+                    + self.configuration[coordinate[0]][coordinate[1] - 1]
+                )
+                - 2 * self.B * self.configuration[coordinate[0]][coordinate[1]]
+            )
+            if np.exp(-delta_E / (Ising2D.k * self.T)) > random.random():
+                continue
+            else:
+                self.configuration[coordinate[0]][coordinate[1]] = -self.configuration[
+                    coordinate[0]
+                ][coordinate[1]]
+
+        return None
+
+    def Configuration_Image(self):
+        plt.imshow(
+            [
+                [self.configuration[i + 1][j + 1] for j in range(self.size[1])]
+                for i in range(self.size[0])
+            ],
+            cmap=plt.cm.bwr,
+        )
+        plt.show()
+        return None
+
+    def Calculate_info(self):
+        self.mean_m = sum(
+            sum(self.configuration[i + 1][j + 1] for i in range(self.size[0]))
+            for j in range(self.size[1])
+        ) / (self.size[0] * self.size[1])
+        self.Energy = sum(
+            sum(
+                -self.J
+                * self.configuration[i + 1][j + 1]
+                * (
+                    self.configuration[i][j + 1]
+                    + self.configuration[i + 1][j]
+                    + self.configuration[i + 2][j + 1]
+                    + self.configuration[i + 1][j + 2]
+                )
+                for i in range(self.size[0])
+            )
+            for j in range(self.size[1])
+        )
+        self.T_c = 2 * self.J / (Ising2D.k * np.log(1 + np.sqrt(2)))
+        return None
+
+
+Ising = Ising2D(5, 1.380649 * 10 ** (-23), 0, size=(40, 40))
+Ising.Evolution(step=10000)
+Ising.Configuration_Image()
