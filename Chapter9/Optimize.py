@@ -103,11 +103,11 @@ class AM_Cluster:
         v_max: int | float = None,
         inertia: Tuple[int | float, int | float] = None,
         c_1: int | float = 2,
-        c_2: int | float = 1.5,
-        accuracy: int | float = None,
+        c_2: int | float = 1,
+        accuracy: int = None,
         step_max: int = 400,
     ):
-        # *粒子群算法寻找能量最低的粒子构型
+        # *魔改的粒子群算法寻找能量最低的粒子构型
         # *r_range：求解的范围在以r_range为半径的球里，默认无边界
         # TODO处理有边界的情况
         # *v_0：初始速度的估计值
@@ -115,7 +115,7 @@ class AM_Cluster:
         # *inertia：迭代公式惯性项的系数
         # *c_1：个体学习因子
         # *c_2：群体学习因子
-        # *accuracy：解的精度
+        # *accuracy：解的精度，当迭代accuracy次能量不变时可以认为已经收敛了
         # *setp_max：最大迭代次数
         Vr = list(self.Potential.keys())
 
@@ -202,6 +202,7 @@ class AM_Cluster:
 
         if inertia is None:
             inertia = (0.4, 0.9)
+        c_2_temp = 0
 
         if v_0 is None:
             v_0 = [
@@ -219,12 +220,17 @@ class AM_Cluster:
             v_max = 0.2 * r_estimate * self.N * 2
 
         if accuracy is None:
-            accuracy = r_estimate * 0.05
-        delta_r = [accuracy * 10] * self.N
+            if self.N < 10:
+                accuracy = 15
+            else:
+                accuracy = self.N * 1.5
+        stable_steps = 0  # 用于记录最低能量没有发生变化的迭代次数
 
-        for i in range(step_max + 1):
+        for iters in range(step_max + 1):
+            if c_2_temp < c_2:
+                c_2_temp += c_2 / int(2 * accuracy / 3)
             energy_id = [0] * N_particle
-            inertia_temp = inertia[1] - (inertia[1] - inertia[0]) * (i / step_max)
+            inertia_temp = inertia[1] - (inertia[1] - inertia[0]) * (iters / step_max)
             v_next = [
                 [
                     [
@@ -235,7 +241,7 @@ class AM_Cluster:
                                 + c_1
                                 * random.random()
                                 * (p_id[k][i][j] - distribution_0[k][i][j])
-                                + c_2
+                                + c_2_temp
                                 * random.random()
                                 * (p_group[i][j] - distribution_0[k][i][j]),
                                 v_max,
@@ -293,20 +299,15 @@ class AM_Cluster:
             energy_group_temp = min(energy_id)
             group_best_index = energy_id.index(energy_group_temp)
             if energy_group_temp < energy_group_best:
-                delta_r = [
-                    np.sqrt(
-                        np.float64(
-                            sum(
-                                (p_group[i][j] - distribution[group_best_index][i][j])
-                                ** 2
-                                for j in range(3)
-                            )
-                        )
-                    )
-                    for i in range(self.N)
-                ]
                 p_group = distribution[group_best_index]
                 energy_group_best = energy_group_temp
+                stable_steps = 0
+            else:
+                stable_steps += 1
+
+            if stable_steps == int(accuracy / 3):
+                c_2_temp = 0  # 如果数次迭代最低能量没有改变，那么让粒子忘记群体最优再迭代几次
+
             p_id = [
                 distribution[i] if energy_id[i] < energy_id_best[i] else p_id[i]
                 for i in range(N_particle)
@@ -315,9 +316,9 @@ class AM_Cluster:
                 min(energy_id[i], energy_id_best[i]) for i in range(N_particle)
             ]
 
-            if all(element < accuracy for element in delta_r):
+            if stable_steps > accuracy:
                 break
-            elif i == step_max:
+            elif iters == step_max:
                 raise ValueError("The maximum number of iterations is not convergent")
             else:
                 distribution_0 = distribution.copy()
@@ -345,7 +346,7 @@ class AM_Cluster:
         return None
 
 
-Atoms = AM_Cluster(6, Potential={"Lennard-Jones": [1]})
+Atoms = AM_Cluster(9, Potential={"Lennard-Jones": [1]})
 Atoms.PSO()
 Atoms.Show_Cluster()
 print(Atoms.distribution)
