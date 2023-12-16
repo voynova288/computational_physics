@@ -1,8 +1,9 @@
+import sys
+import os
 import sympy as symp
 import numpy as np
 import random as random
 import matplotlib.pyplot as plt
-import mpl_toolkits.mplot3d as p3d
 from typing import Sequence, Tuple
 from scipy import constants
 
@@ -106,6 +107,7 @@ class AM_Cluster:
         c_2: int | float = 2,
         accuracy: int = None,
         step_max: int = 1000,
+        seed: int | float = 5,
     ):
         # *魔改的粒子群算法寻找能量最低的粒子构型，当用粒子群算法得到收敛的结果时，令粒子丧失群体性一段时间
         # *r_range：求解的范围在以r_range为半径的球里，默认无边界
@@ -146,7 +148,9 @@ class AM_Cluster:
         distribution_0 = [  # 初始化粒子群位置
             [
                 [
-                    r_estimate * random.uniform(0.1, self.N) * random.choice([-5, 5])
+                    r_estimate
+                    * random.uniform(0.1, self.N)
+                    * random.choice([-seed, seed])
                     for j in range(3)
                 ]
                 for i in range(self.N)
@@ -154,7 +158,6 @@ class AM_Cluster:
             for j in range(N_particle)
         ]
 
-        # 初始能量
         energy_group_best = 0  # 群体找到的最优构型
         energy_id_best = [0] * N_particle  # 个体找到的最优构型
         if "Lennard-Jones" in Vr:
@@ -199,14 +202,14 @@ class AM_Cluster:
             pass
 
         if inertia is None:
-            inertia = (0.4, 0.9)
+            inertia = (0.4, 2)
         c_2_temp = 0
 
         if v_0 is None:
             v_0 = [
                 [
                     [
-                        distribution_0[k][i][j] * random.uniform(-0.15, 0.15)
+                        distribution_0[k][i][j] * random.uniform(-0.3, 0.3)
                         for j in range(3)
                     ]
                     for i in range(self.N)
@@ -225,6 +228,19 @@ class AM_Cluster:
         stable_steps = 0  # 用于记录最低能量没有发生变化的迭代次数
 
         for iters in range(step_max + 1):
+            os.system("cls")
+            print(f"Number of iterations:{iters}")
+            print(
+                f"The energy distribution of the particles found so far:{energy_group_best}"
+            )
+            if stable_steps > 0:
+                print(
+                    f"The stability of the solution is being verified:",
+                    "\u258B" * stable_steps,
+                    "  " * (accuracy - stable_steps),
+                    f"[{stable_steps}/{accuracy}]",
+                )
+            sys.stdout.flush()
             if c_2_temp < c_2:
                 c_2_temp += c_2 / int(2 * accuracy / 3)
             energy_id = [0] * N_particle
@@ -322,7 +338,6 @@ class AM_Cluster:
             else:
                 distribution_0 = distribution.copy()
                 v_0 = v_next.copy()
-                print(energy_group_best)
 
         self.distribution = p_group
         return None
@@ -334,7 +349,7 @@ class AM_Cluster:
     def Show_Cluster(self):
         xlist = [self.distribution[i][0] for i in range(self.N)]
         x_c = sum(element for element in xlist) / len(xlist)
-        xlist = [element - x_c for element in xlist]  # 原点为质心
+        xlist = [element - x_c for element in xlist]  # 对齐到质心
         ylist = [self.distribution[i][1] for i in range(self.N)]
         y_c = sum(element for element in ylist) / len(ylist)
         ylist = [element - y_c for element in ylist]
@@ -349,9 +364,3 @@ class AM_Cluster:
         ax.set_title("Particle Cluster")
         plt.show()
         return None
-
-
-Atoms = AM_Cluster(8, Potential={"Lennard-Jones": [1]})
-Atoms.PSO()
-Atoms.Show_Cluster()
-print(Atoms.distribution)
