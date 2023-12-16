@@ -102,12 +102,12 @@ class AM_Cluster:
         v_0: list = None,
         v_max: int | float = None,
         inertia: Tuple[int | float, int | float] = None,
-        c_1: int | float = 2,
+        c_1: int | float = 1.5,
         c_2: int | float = 1,
         accuracy: int = None,
-        step_max: int = 400,
+        step_max: int = 1000,
     ):
-        # *魔改的粒子群算法寻找能量最低的粒子构型
+        # *魔改的粒子群算法寻找能量最低的粒子构型，当用粒子群算法得到收敛的结果时，令粒子丧失群体性一段时间
         # *r_range：求解的范围在以r_range为半径的球里，默认无边界
         # TODO处理有边界的情况
         # *v_0：初始速度的估计值
@@ -117,6 +117,7 @@ class AM_Cluster:
         # *c_2：群体学习因子
         # *accuracy：解的精度，当迭代accuracy次能量不变时可以认为已经收敛了
         # *setp_max：最大迭代次数
+        # *容易陷入局部最优可以调低c_2和调高accuracy，如果
         Vr = list(self.Potential.keys())
 
         V_temp = 0  # 用于估算初始粒子分布范围的临时的势能函数
@@ -346,7 +347,7 @@ class AM_Cluster:
         return None
 
 
-Atoms = AM_Cluster(9, Potential={"Lennard-Jones": [1]})
+Atoms = AM_Cluster(8, Potential={"Lennard-Jones": [1]})
 Atoms.PSO()
 Atoms.Show_Cluster()
 print(Atoms.distribution)
