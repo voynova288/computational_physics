@@ -147,7 +147,6 @@ class AM_Cluster:
             [
                 [
                     r_estimate
-                    * random.uniform(1, 10)
                     * random.uniform(0.1, self.N)
                     * random.choice([-5, 5])
                     for j in range(3)
