@@ -347,6 +347,9 @@ class AM_Cluster:
     def SA(self):
         # TODO模拟退火算法
         return None
+    
+    def GA(self):
+        # TODO遗传算法
 
     def Show_Cluster(self):
         xlist = [self.distribution[i][0] for i in range(self.N)]
