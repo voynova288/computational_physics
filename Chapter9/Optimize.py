@@ -234,7 +234,7 @@ class AM_Cluster:
         stable_steps = 0  # 用于记录最低能量没有发生变化的迭代次数
 
         for iters in range(step_max + 1):
-            os.system("cls")
+            os.system("cls")    #进度条
             print(f"Number of iterations:{iters}")
             print(
                 f"The energy distribution of the particles found so far:{energy_group_best}"
