@@ -335,8 +335,14 @@ class AM_Cluster:
 
     def Show_Cluster(self):
         xlist = [self.distribution[i][0] for i in range(self.N)]
+        x_c = sum(element for element in xlist) / len(xlist)
+        xlist = [element - x_c for element in xlist]  # 原点为质心
         ylist = [self.distribution[i][1] for i in range(self.N)]
+        y_c = sum(element for element in ylist) / len(ylist)
+        ylist = [element - y_c for element in ylist]
         zlist = [self.distribution[i][2] for i in range(self.N)]
+        z_c = sum(element for element in zlist) / len(zlist)
+        zlist = [element - z_c for element in zlist]
         ax = plt.axes(projection="3d")
         ax.scatter(xlist, ylist, zlist)
         ax.set_xlabel("x")
