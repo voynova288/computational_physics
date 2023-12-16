@@ -234,7 +234,7 @@ class AM_Cluster:
         stable_steps = 0  # 用于记录最低能量没有发生变化的迭代次数
 
         for iters in range(step_max + 1):
-            os.system("cls")    #进度条
+            os.system("cls")  # 进度条
             print(f"Number of iterations:{iters}")
             print(
                 f"The energy distribution of the particles found so far:{energy_group_best}"
@@ -356,10 +356,45 @@ class AM_Cluster:
         # TODO遗传算法
         return None
 
-    def Add_Particle_to_Stable(self, to_N: int, algorithm: dict):
+    def Add_Particle_to_Stable(
+        self, to_N: int, setp: int = 1, algorithm_info: dict = None
+    ):
         # TODO向一个稳定的粒子分布上添加粒子
         if self.distribution is None:
             raise ValueError("Please first calculate a stable particle distribution")
+
+        distribution_add = None
+        algo_key = list(algorithm_info.keys())
+        if algorithm_info["algorithm"] is "PSO":    
+            if "N_particle" in algorithm.keys():
+                N_particle = algorithm["N_particle"]
+            if "r_range" in algo_key:
+                r_range = algorithm["r_range"]
+            if "distribution_add" in algo_key:  # 要添加的粒子位置的初始值
+                distribution_add = algorithm["distribution_add"]
+            if "v_0" in algo_key:
+                v_0 = algorithm["v_0"]
+            if "v_max" in algo_key:
+                v_max = algorithm["v_max"]
+            if "inertia" in algo_key:
+                inertia = algorithm["inertia"]
+            if "c_1" in algo_key:
+                c_1 = algorithm["c_1"]
+            if "c_2" in algo_key:
+                c_2 = algorithm["c_2"]
+            if "accuracy" in algo_key:
+                accuracy = algorithm["accuracy"]
+            if "step_max" in algo_key:
+                step_max = algorithm["step_max"]
+            if "seed" in algo_key:
+                seed = algorithm["seed"]
+        if algorithm_info['algorithm'] is 'SA':
+            pass
+        if algorithm_info['algorithm'] is 'RA':
+            pass
+
+        if distribution_add is None:
+            pass
         return None
 
     def Show_Cluster(self):
