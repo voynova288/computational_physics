@@ -146,9 +146,7 @@ class AM_Cluster:
         distribution_0 = [  # 初始化粒子群位置
             [
                 [
-                    r_estimate
-                    * random.uniform(0.1, self.N)
-                    * random.choice([-5, 5])
+                    r_estimate * random.uniform(0.1, self.N) * random.choice([-5, 5])
                     for j in range(3)
                 ]
                 for i in range(self.N)
@@ -302,6 +300,7 @@ class AM_Cluster:
                 p_group = distribution[group_best_index]
                 energy_group_best = energy_group_temp
                 stable_steps = 0
+                c_2_temp = c_2
             else:
                 stable_steps += 1
 
