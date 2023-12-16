@@ -113,12 +113,13 @@ class AM_Cluster:
         # *r_range：求解的范围在以r_range为半径的球里，默认无边界
         # TODO处理有边界的情况
         # *v_0：初始速度的估计值
-        # * v_max：最大速度
+        # *v_max：最大速度
         # *inertia：迭代公式惯性项的系数
         # *c_1：个体学习因子
         # *c_2：群体学习因子
         # *accuracy：解的精度，当迭代accuracy次能量不变时可以认为已经收敛了
         # *setp_max：最大迭代次数
+        # *seed：随机生成初始分布的种子，值越大粒子分布的范围越广
         # *容易陷入局部最优可以调低c_2和调高accuracy，如果
         Vr = list(self.Potential.keys())
 
