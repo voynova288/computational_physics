@@ -103,7 +103,7 @@ class AM_Cluster:
         v_max: int | float = None,
         inertia: Tuple[int | float, int | float] = None,
         c_1: int | float = 1.5,
-        c_2: int | float = 1,
+        c_2: int | float = 2,
         accuracy: int = None,
         step_max: int = 1000,
     ):
@@ -215,7 +215,7 @@ class AM_Cluster:
             ]
 
         if v_max is None:
-            v_max = 0.2 * r_estimate * self.N * 2
+            v_max = 0.5 * r_estimate * self.N
 
         if accuracy is None:
             if self.N < 10:
