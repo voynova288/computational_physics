@@ -100,6 +100,7 @@ class AM_Cluster:
         self,
         N_particle: int = 150,
         r_range: int | float = None,
+        distribution_0: list = None,
         v_0: list = None,
         v_max: int | float = None,
         inertia: Tuple[int | float, int | float] = None,
@@ -113,6 +114,7 @@ class AM_Cluster:
         # *这个算法计算量较大
         # *r_range：求解的范围在以r_range为半径的球里，默认无边界
         # TODO处理有边界的情况
+        # *distribution_0：粒子群的初始位置
         # *v_0：初始速度的估计值
         # *v_max：最大速度
         # *inertia：迭代公式惯性项的系数
@@ -148,18 +150,19 @@ class AM_Cluster:
                 "Can't find a stable particle configuration, please check your input potential energy"
             )
 
-        distribution_0 = [  # 初始化粒子群位置
-            [
+        if distribution_0 is None:
+            distribution_0 = [  # 初始化粒子群位置
                 [
-                    r_estimate
-                    * random.uniform(0.1, self.N)
-                    * random.choice([-seed, seed])
-                    for j in range(3)
+                    [
+                        r_estimate
+                        * random.uniform(0.1, self.N)
+                        * random.choice([-seed, seed])
+                        for j in range(3)
+                    ]
+                    for i in range(self.N)
                 ]
-                for i in range(self.N)
+                for j in range(N_particle)
             ]
-            for j in range(N_particle)
-        ]
 
         energy_group_best = 0  # 群体找到的最优构型
         energy_id_best = [0] * N_particle  # 个体找到的最优构型
@@ -351,6 +354,12 @@ class AM_Cluster:
 
     def GA(self):
         # TODO遗传算法
+        return None
+
+    def Add_Particle_to_Stable(self, to_N: int, algorithm: dict):
+        # TODO向一个稳定的粒子分布上添加粒子
+        if self.distribution is None:
+            raise ValueError("Please first calculate a stable particle distribution")
         return None
 
     def Show_Cluster(self):
