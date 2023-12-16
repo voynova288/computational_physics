@@ -120,7 +120,8 @@ class AM_Cluster:
         # *accuracy：解的精度，当迭代accuracy次能量不变时可以认为已经收敛了
         # *setp_max：最大迭代次数
         # *seed：随机生成初始分布的种子，值越大粒子分布的范围越广
-        # *容易陷入局部最优可以调低c_2和调高accuracy，如果
+        # *v_max,inertia,c_2和accuracy越大，越不容易得到局部最优（实际上，模拟粒子分布几乎不可能找到全局最优）
+        # *越不容易得到局部最优，收敛速度也越慢
         Vr = list(self.Potential.keys())
 
         V_temp = 0  # 用于估算初始粒子分布范围的临时的势能函数
