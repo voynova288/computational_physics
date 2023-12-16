@@ -110,6 +110,7 @@ class AM_Cluster:
         seed: int | float = 5,
     ):
         # *魔改的粒子群算法寻找能量最低的粒子构型，当用粒子群算法得到收敛的结果时，令粒子丧失群体性一段时间
+        # *这个算法计算量较大
         # *r_range：求解的范围在以r_range为半径的球里，默认无边界
         # TODO处理有边界的情况
         # *v_0：初始速度的估计值
@@ -347,9 +348,10 @@ class AM_Cluster:
     def SA(self):
         # TODO模拟退火算法
         return None
-    
+
     def GA(self):
         # TODO遗传算法
+        return None
 
     def Show_Cluster(self):
         xlist = [self.distribution[i][0] for i in range(self.N)]
