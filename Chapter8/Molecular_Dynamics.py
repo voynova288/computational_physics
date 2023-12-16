@@ -41,7 +41,7 @@ class FPU:
             case "Verlet":
                 r_0 = [r[i] - v_0[i] * dt for i in range(self.N)]
                 for i in range(step):
-                    if self.is_ring == True:
+                    if self.is_ring is True:
                         a = [
                             (
                                 self.k * (r[i + 1] - r[i])
