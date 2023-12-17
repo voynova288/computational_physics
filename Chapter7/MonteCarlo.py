@@ -10,17 +10,18 @@ import matplotlib.pyplot as plt
 # *非均匀随机数生成器
 # *distribution:概率分布密度，number:要生成点的数量，method：方法
 # *舍选法：Rejection，求逆法：Inversion，Metropolis算法：Metropolis
-# *字典boundary：边界  字典格式{sympy.Symbol : value}，输入sympy.Symbol=[a, b]
-# *例Non_Uniform_Random(gauss, 10000, method = "Inversion", x = [-1, 1])
+# *delta：Metropolis方法中随机行走的步长
+# *字典boundary：边界  字典格式{sympy.Symbol: [min, max]}
+# *例Non_Uniform_Random(gauss, 10000, method = "Inversion", {x: [-1, 1]})
 # TODO生成多变量的分布的数据
 def Non_Uniform_Random(
     distribution: symp.Expr,
     number: int,
     method: str = "Metropolis",
     delta: int | float | list = None,
-    **boundary,
+    boundary: dict = None,
 ) -> list:
-    symbols = tuple(boundary.keys())
+    symbols = list(boundary.keys())
     bounds_distribution = tuple(boundary.values())[0]
     distribution_ = symp.lambdify(symbols, distribution, "numpy")
     res_min = opt.minimize_scalar(
@@ -43,7 +44,7 @@ def Non_Uniform_Random(
                         * (boundary[symbols[j]][1] - boundary[symbols[j]][0])
                         for j in range(len(symbols))
                     ]
-                    sublist = dict(zip(symbols, lambda_))
+                    sublist = dict(zip(symp.sympify(symbols), lambda_))
                     f = distribution.subs(sublist)
                     f_try = res_min + random.uniform(0, 1) * (res_max - res_min)
                     if f_try <= f:
@@ -52,7 +53,10 @@ def Non_Uniform_Random(
                     else:
                         continue
 
-        case "Inversion":
+            if len(points[0]) == 1:
+                points = [points[i][0] for i in range(len(points))]
+
+        case "Inversion":  # TODO 这部分代码无法处理distribution是分段函数的情况
             x_temp = [
                 [
                     boundary[symbols[j]][0]
@@ -79,7 +83,6 @@ def Non_Uniform_Random(
                 + (i / (number - 1)) * (F_func(x_temp[0][-1]) - F_func(x_temp[0][0]))
                 for i in range(number)
             ]
-            print(point_y)
 
             def F_sol(x, i):
                 return F_func(x) - point_y[i]
@@ -104,7 +107,7 @@ def Non_Uniform_Random(
             if delta == None:
                 delta = np.array(
                     [
-                        (boundary[symbols[j]][1] - boundary[symbols[j]][0]) / 3
+                        (boundary[symbols[j]][1] - boundary[symbols[j]][0]) / 4
                         for j in range(len(symbols))
                     ]
                 )
@@ -134,7 +137,36 @@ def Non_Uniform_Random(
                     else:
                         continue
 
+            if len(points[0]) == 1:
+                points = [points[i][0] for i in range(len(points))]
+
     return points
+
+
+def Show_Distribution(points: list, section: int = 25) -> None:
+    points.sort()
+    step = (points[-1] - points[0]) / section
+    xlist1 = [
+        f"[{round(points[0]+step*i,2)},{round(points[0]+step*(i+1),2)}]"
+        for i in range(section)
+    ]
+    ylist1 = [
+        len(
+            [
+                element
+                for element in points
+                if points[0] + step * i < element < points[0] + step * (i + 1)
+            ]
+        )
+        for i in range(section)
+    ]
+    plt.bar(xlist1, ylist1)
+    plt.xticks(xlist1, rotation=45)
+    plt.xlabel("sections")
+    plt.ylabel("number")
+    plt.show()
+
+    return None
 
 
 class Ising2D:
@@ -237,8 +269,3 @@ class Ising2D:
         )
         self.T_c = 2 * self.J / (Ising2D.k * np.log(1 + np.sqrt(2)))
         return None
-
-
-Ising = Ising2D(5, 1.380649 * 10 ** (-23), 0, size=(40, 40))
-Ising.Evolution(step=10000)
-Ising.Configuration_Image()

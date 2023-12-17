@@ -365,7 +365,7 @@ class AM_Cluster:
 
         distribution_add = None
         algo_key = list(algorithm_info.keys())
-        if algorithm_info["algorithm"] is "PSO":    
+        if algorithm_info["algorithm"] == "PSO":
             if "N_particle" in algorithm.keys():
                 N_particle = algorithm["N_particle"]
             if "r_range" in algo_key:
@@ -388,9 +388,9 @@ class AM_Cluster:
                 step_max = algorithm["step_max"]
             if "seed" in algo_key:
                 seed = algorithm["seed"]
-        if algorithm_info['algorithm'] is 'SA':
+        if algorithm_info["algorithm"] == "SA":
             pass
-        if algorithm_info['algorithm'] is 'RA':
+        if algorithm_info["algorithm"] == "RA":
             pass
 
         if distribution_add is None:
