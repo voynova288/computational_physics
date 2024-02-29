@@ -6,7 +6,10 @@ from sympy import sympify, sqrt, Pow
 def Qua_Equ_Sol(a, b, c):
     Cofficients = [a, b, c]
     if all(isinstance(Element, (int, float, complex, Symbol)) for Element in Cofficients):
-        return [(-b + sqrt(Pow(b, 2) - 4*a*c))/(2*a), (-b - sqrt(Pow(b, 2) - 4*a*c))/(2*a)]
+        return [
+            ((-b + sqrt(Pow(b, 2) - 4*a*c))/(2*a)).evalf(),
+            ((-b - sqrt(Pow(b, 2) - 4*a*c))/(2*a)).evalf()
+        ]
     else:
         Symbols_Cofficients = []
         for Element in Cofficients:
@@ -20,7 +23,10 @@ def Qua_Equ_Sol(a, b, c):
         aa = Symbols_Cofficients[0]
         bb = Symbols_Cofficients[1]
         cc = Symbols_Cofficients[2]
-        return [(-aa + sqrt(Pow(bb, 2) - 4*aa*cc))/(2*aa), (-bb - sqrt(Pow(bb, 2) - 4*aa*cc))/(2*aa)]    
+        return [
+            (-bb + sqrt(Pow(bb, 2) - 4*aa*cc))/(2*aa),
+            (-bb - sqrt(Pow(bb, 2) - 4*aa*cc))/(2*aa)
+        ]    
 
 
 c = symbols('c')
