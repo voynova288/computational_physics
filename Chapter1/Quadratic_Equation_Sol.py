@@ -27,10 +27,3 @@ def Qua_Equ_Sol(a, b, c):
             (-bb + sqrt(Pow(bb, 2) - 4*aa*cc))/(2*aa),
             (-bb - sqrt(Pow(bb, 2) - 4*aa*cc))/(2*aa)
         ]    
-
-
-c = symbols('c')
-
-sol = Qua_Equ_Sol(c, 'd+12', 3)
-
-print(f"{sol}")
